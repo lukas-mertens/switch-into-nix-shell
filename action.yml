@@ -10,16 +10,12 @@ inputs:
     description: 'Whether to install Nix. Set to false if Nix is already installed.'
     required: false
     default: 'true'
-  install_nix_action_version:
-    description: 'Version of cachix/install-nix-action to use.'
-    required: false
-    default: 'v27'
 runs:
   using: 'composite'
   steps:
     - name: Install Nix
       if: ${{ inputs.install_nix == 'true' }}
-      uses: cachix/install-nix-action@${{ inputs.install_nix_action_version }}
+      uses: cachix/install-nix-action@v27
 
     - name: Switch into Nix Shell
       shell: bash
