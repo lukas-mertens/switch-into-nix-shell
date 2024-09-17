@@ -19,7 +19,6 @@ jobs:
         with:
           nix_args: ''
           install_nix: 'true'
-          install_nix_action_version: 'v27'
 
       - name: Verify Environment Variables
         run: |
