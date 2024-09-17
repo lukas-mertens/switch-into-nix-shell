@@ -1,0 +1,47 @@
+name: Integration Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Switch into Nix Shell
+        uses: ./
+        with:
+          nix_args: ''
+          install_nix: 'true'
+          install_nix_action_version: 'v27'
+
+      - name: Verify Environment Variables
+        run: |
+          echo "TEST_ENV_VAR is: $TEST_ENV_VAR"
+          echo "ANOTHER_VAR is: $ANOTHER_VAR"
+          if [ "$TEST_ENV_VAR" != "Hello from Nix Shell" ]; then
+            echo "TEST_ENV_VAR is not set correctly"
+            exit 1
+          fi
+          if [ "$ANOTHER_VAR" != "Another variable" ]; then
+            echo "ANOTHER_VAR is not set correctly"
+            exit 1
+          fi
+          echo "Environment variables are set correctly"
+
+      - name: Test Nix Package Availability
+        run: |
+          echo "Checking if 'hello' command is available..."
+          if ! command -v hello >/dev/null; then
+            echo "'hello' command is not available"
+            exit 1
+          fi
+          echo "'hello' command is available"
+          echo "Running 'hello' command:"
+          hello
