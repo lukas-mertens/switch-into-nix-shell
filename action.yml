@@ -1,0 +1,72 @@
+name: 'Switch into Nix Shell'
+description: 'Switch into a Nix shell and export environment variables to subsequent steps.'
+author: 'Lukas Mertens'
+inputs:
+  nix_args:
+    description: 'Additional arguments to pass to nix print-dev-env.'
+    required: false
+    default: ''
+  install_nix:
+    description: 'Whether to install Nix. Set to false if Nix is already installed.'
+    required: false
+    default: 'true'
+  install_nix_action_version:
+    description: 'Version of cachix/install-nix-action to use.'
+    required: false
+    default: 'v27'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Nix
+      if: ${{ inputs.install_nix == 'true' }}
+      uses: cachix/install-nix-action@${{ inputs.install_nix_action_version }}
+
+    - name: Switch into Nix Shell
+      shell: bash
+      run: |
+        #!/usr/bin/env bash
+
+        # Function to save environment variables to a file
+        save_env() {
+          compgen -e | while read -r var; do
+            value="${!var}"
+            # Replace newlines with \n for comparison
+            escaped_value=$(printf '%s' "$value" | sed ':a;N;$!ba;s/\n/\\n/g')
+            echo "${var}=${escaped_value}"
+          done | sort > "$1"
+        }
+
+        before_env=$(mktemp)
+        after_env=$(mktemp)
+        diff_env=$(mktemp)
+
+        # Save initial environment
+        save_env "$before_env"
+
+        # Load Nix environment
+        nix_dev_env_script=$(mktemp)
+        nix print-dev-env ${{ inputs.nix_args }} > "$nix_dev_env_script"
+        source "$nix_dev_env_script"
+
+        # Save environment after loading Nix
+        save_env "$after_env"
+
+        # Find differences
+        diff "$before_env" "$after_env" | grep '^>' | sed 's/^> //' > "$diff_env"
+
+        # Add changed variables to GITHUB_ENV
+        while IFS='=' read -r name value; do
+          # Unescape newlines
+          unescaped_value=$(printf '%s' "$value" | sed 's/\\n/\n/g')
+
+          echo "${name}<<EOF" >> "$GITHUB_ENV"
+          echo "$unescaped_value" >> "$GITHUB_ENV"
+          echo "EOF" >> "$GITHUB_ENV"
+        done < "$diff_env"
+
+        echo "Environment variables added to GITHUB_ENV:"
+        cat "$diff_env"
+
+branding:
+  icon: 'terminal'
+  color: 'blue'
