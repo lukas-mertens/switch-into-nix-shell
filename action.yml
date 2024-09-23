@@ -20,7 +20,7 @@ runs:
     - name: Switch into Nix Shell
       shell: bash
       run: |
-        #!/usr/bin/env bash
+        set -xe
 
         # Function to save environment variables to a file
         save_env() {
