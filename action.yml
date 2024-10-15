@@ -48,7 +48,7 @@ runs:
         save_env "$after_env"
 
         # Find differences
-        diff "$before_env" "$after_env" | grep '^>' | sed 's/^> //' > "$diff_env"
+        diff "$before_env" "$after_env" | grep '^>' | sed 's/^> //' > "$diff_env" || true
 
         # Add changed variables to GITHUB_ENV
         while IFS='=' read -r name value; do
